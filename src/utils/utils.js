@@ -22,7 +22,7 @@ const getFolders = async () => {
 
   const files = await fs.readdir(sourceDir, { withFileTypes: true });
   const directories = files
-    .filter((dirent) => dirent.isDirectory())
+    .filter((dirent) => dirent.isDirectory() && !dirent.name.startsWith("."))
     .map((dirent) => dirent.name);
 
   return directories;
