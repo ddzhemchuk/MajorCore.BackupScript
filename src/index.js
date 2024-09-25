@@ -8,6 +8,9 @@ const { sendNotification } = require("./utils/telegram");
     await backupFolders();
   } catch (e) {
     console.error(e);
-    // sendNotification(JSON.stringify(e));
+
+    if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
+      sendNotification(JSON.stringify(e));
+    }
   }
 })();
