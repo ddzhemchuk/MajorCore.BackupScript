@@ -16,7 +16,7 @@ const sendNotification = async (message) => {
     console.error(err);
   }
 
-  process.exit(1);
+  // process.exit(1);
 };
 
 module.exports = {
