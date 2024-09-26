@@ -3,6 +3,7 @@ const tar = require("tar");
 const path = require("path");
 const fs = require("fs");
 const { syncTmpFolder, getBackupFolderPath, getFolders } = require("./utils");
+const { sendNotification } = require("./telegram");
 
 const beforeEach = async () => {
   global.majorcore_backupFolderPath = getBackupFolderPath();
@@ -12,54 +13,64 @@ const beforeEach = async () => {
   backups_limit =
     isNaN(backups_limit) || backups_limit <= 0 ? 5 : backups_limit;
 
-  const client = new Client();
-  client.ftp.verbose = process.env.LOGGING === "true";
+  try {
+    const client = new Client();
+    client.ftp.verbose = process.env.LOGGING === "true";
 
-  await client.access({
-    host: process.env.FTP_HOST,
-    user: process.env.FTP_USER,
-    password: process.env.FTP_PASS,
-    secure: process.env.FTP_SECURE === "true",
-  });
+    await client.access({
+      host: process.env.FTP_HOST,
+      user: process.env.FTP_USER,
+      password: process.env.FTP_PASS,
+      secure: process.env.FTP_SECURE === "true",
+    });
 
-  //delete old backups
-  let folders = await client.list();
-  folders = folders.filter((item) => item.name.startsWith("servers-"));
-  folders.sort((a, b) => a.name.localeCompare(b.name));
+    //delete old backups
+    let folders = await client.list();
+    folders = folders.filter((item) => item.name.startsWith("servers-"));
+    folders.sort((a, b) => a.name.localeCompare(b.name));
 
-  if (folders.length >= backups_limit) {
-    const toDelete = folders.slice(0, folders.length - backups_limit + 1);
-    for (const folder of toDelete) {
-      await client.removeDir(folder.name);
+    if (folders.length >= backups_limit) {
+      const toDelete = folders.slice(0, folders.length - backups_limit + 1);
+      for (const folder of toDelete) {
+        await client.removeDir(folder.name);
+      }
     }
+
+    //create new folder for backup
+    await client.ensureDir(global.majorcore_backupFolderPath);
+
+    client.close();
+  } catch (err) {
+    console.error(err);
+    sendNotification(err);
   }
-
-  //create new folder for backup
-  await client.ensureDir(global.majorcore_backupFolderPath);
-
-  client.close();
 };
 
 const uploadArchive = async (folder) => {
-  const client = new Client();
-  client.ftp.verbose = process.env.LOGGING === "true";
+  try {
+    const client = new Client();
+    client.ftp.verbose = process.env.LOGGING === "true";
 
-  await client.access({
-    host: process.env.FTP_HOST,
-    user: process.env.FTP_USER,
-    password: process.env.FTP_PASS,
-    secure: process.env.FTP_SECURE === "true",
-  });
+    await client.access({
+      host: process.env.FTP_HOST,
+      user: process.env.FTP_USER,
+      password: process.env.FTP_PASS,
+      secure: process.env.FTP_SECURE === "true",
+    });
 
-  const archive = path.join(process.cwd(), "tmp", `${folder}.tar.gz`);
-  const ftpPath = global.majorcore_backupFolderPath + folder + ".tar.gz";
+    const archive = path.join(process.cwd(), "tmp", `${folder}.tar.gz`);
+    const ftpPath = global.majorcore_backupFolderPath + folder + ".tar.gz";
 
-  await client.uploadFrom(archive, ftpPath);
-  console.log(`Uploaded archive for folder: ${folder}`);
+    await client.uploadFrom(archive, ftpPath);
+    console.log(`Uploaded archive for folder: ${folder}`);
 
-  client.close();
+    client.close();
 
-  fs.unlinkSync(archive);
+    fs.unlinkSync(archive);
+  } catch (err) {
+    console.error(err);
+    sendNotification(err);
+  }
 };
 
 const archiveAndUpload = async (folder) => {

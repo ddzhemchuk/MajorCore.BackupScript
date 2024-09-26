@@ -1,4 +1,4 @@
-const sendNotification = async (message) => {
+const sendNotification = async (error) => {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -6,7 +6,7 @@ const sendNotification = async (message) => {
     console.error("Telegram bot token or chat id not provided");
   }
 
-  message = `Error while creating backup on node ${process.env.FTP_USER?.toUpperCase()}. Logs: ${message}`;
+  const message = `Error while creating backup on node ${process.env.FTP_USER?.toUpperCase()}. Logs: ${JSON.stringify(error)}`;
 
   try {
     await fetch(
@@ -16,7 +16,7 @@ const sendNotification = async (message) => {
     console.error(err);
   }
 
-  // process.exit(1);
+  process.exit(1);
 };
 
 module.exports = {
