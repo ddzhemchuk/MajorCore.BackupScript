@@ -70,14 +70,25 @@ const archiveAndUpload = async (folder) => {
   const sourceDir = path.join(process.env.SOURCE_DIR, folder);
   const output = path.join(process.cwd(), "tmp", `${folder}.tar.gz`);
 
-  await tar.create(
-    {
-      gzip: true,
-      file: output,
-      cwd: sourceDir,
-    },
-    ["."]
-  );
+  try {
+    await tar.create(
+      {
+        gzip: true,
+        file: output,
+        cwd: sourceDir,
+        onwarn: (message, data) => {
+          if (data.code === "ENOENT") {
+            console.warn(`Warning: Skipping missing file - ${data.path}`);
+          } else {
+            console.warn(message);
+          }
+        },
+      },
+      ["."]
+    );
+  } catch (error) {
+    console.error(`Error creating archive: ${error}`);
+  }
 
   console.log(`Archive created for folder: ${folder}`);
 
