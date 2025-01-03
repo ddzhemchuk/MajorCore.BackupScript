@@ -1,7 +1,8 @@
 const sendNotification = async (msg) => {
   if (msg instanceof Error) {
     console.error(msg);
-    msg = `❌ Backups error (${process.env.FTP_USER?.toUpperCase()}). Logs: ${msg.message}`;
+    const nodeName = process.env.FTP_USER ? ` (${process.env.FTP_USER.toUpperCase()})` : "";
+    msg = `❌ Backups error${nodeName}. Logs: ${msg.message}`;
   }
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
