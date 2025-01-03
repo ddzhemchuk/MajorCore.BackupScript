@@ -1,4 +1,5 @@
 const { Client } = require("basic-ftp");
+const { exec } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 const { getBackupFolderPath, getFolders } = require("./utils");
@@ -101,14 +102,14 @@ const archiveAndUpload = async (folder) => {
     await createTar(output, sourceDir);
     console.log(`Archive created for folder: ${folder}`);
   } catch (err) {
-    throw new Error(`Failed to create archive for folder: ${folder}\n${err.message}`);
+    throw new Error(`Failed to create archive for folder: ${folder}. ${err.message}`);
   }
 
   try {
     await uploadArchive(folder);
     console.log(`Uploaded archive for folder: ${folder}`);
   } catch (err) {
-    throw new Error(`Failed to upload archive for folder: ${folder}\n${err.message}`);
+    throw new Error(`Failed to upload archive for folder: ${folder}. ${err.message}`);
   }
 };
 
