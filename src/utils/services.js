@@ -75,7 +75,7 @@ const uploadArchive = async (folder) => {
 /** Creates a tar archive of a folder */
 const createTar = async (output, sourceDir) => {
   return new Promise((resolve, reject) => {
-    const command = `tar -I zstd --ignore-failed-read -cf ${output} -C ${sourceDir} .`;
+    const command = `tar -I zstd --ignore-failed-read --warning=no-file-changed -cf ${output} -C ${sourceDir} .`;
 
     const tarProcess = exec(command, (error, stdout, stderr) => {
       if (error) {
