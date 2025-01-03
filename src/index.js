@@ -7,6 +7,6 @@ const { sendNotification } = require("./utils/telegram");
     await beforeEach();
     await backupFolders();
   } catch (e) {
-    console.error(e);
+    sendNotification(e);
   }
 })();
