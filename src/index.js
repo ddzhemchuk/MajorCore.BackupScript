@@ -8,5 +8,6 @@ const { sendNotification } = require("./utils/telegram");
     await backupFolders();
   } catch (e) {
     sendNotification(e);
+    process.exit(1);
   }
 })();
