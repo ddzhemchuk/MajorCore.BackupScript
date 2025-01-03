@@ -6,22 +6,19 @@ const { getBackupFolderPath, getFolders } = require("./utils");
 const { sendNotification } = require("./telegram");
 
 let backupFolderPath = null;
-let client = null;
 
 /** Returns a connected FTP client */
 const getClient = async () => {
   try {
-    if (!client) {
-      client = new Client();
-      client.ftp.verbose = process.env.LOGGING === "true";
+    const client = new Client();
+    client.ftp.verbose = process.env.LOGGING === "true";
 
-      await client.access({
-        host: process.env.FTP_HOST,
-        user: process.env.FTP_USER,
-        password: process.env.FTP_PASS,
-        secure: process.env.FTP_SECURE === "true",
-      });
-    }
+    await client.access({
+      host: process.env.FTP_HOST,
+      user: process.env.FTP_USER,
+      password: process.env.FTP_PASS,
+      secure: process.env.FTP_SECURE === "true",
+    });
 
     return client;
   } catch (err) {
@@ -68,6 +65,7 @@ const uploadArchive = async (folder) => {
   const ftpPath = backupFolderPath + folder + ".tar.zst";
 
   await client.uploadFrom(archive, ftpPath);
+  client.close();
 
   fs.unlinkSync(archive);
 };
@@ -124,13 +122,6 @@ const backupFolders = async () => {
 
   for (const folder of foldersToBackup) {
     await archiveAndUpload(folder);
-  }
-
-  try {
-    const client = await getClient();
-    await client.close();
-  } catch (err) {
-    console.error(`Failed to close FTP connection: ${err.message}`);
   }
 
   sendNotification(`✅ Backups done (backuped ${foldersToBackup.length} folders)`);
