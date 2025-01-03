@@ -116,7 +116,7 @@ const backupFolders = async () => {
   const foldersToBackup = await getFolders();
 
   if (foldersToBackup.length === 0) {
-    sendNotification(`✅ [${process.env.FTP_USER}] Backups done (no folders to backup)`);
+    sendNotification(`✅ [${process.env.NODE_NAME}] Backups done (no folders to backup)`);
     return;
   }
 
@@ -124,7 +124,7 @@ const backupFolders = async () => {
     await archiveAndUpload(folder);
   }
 
-  sendNotification(`✅ [${process.env.FTP_USER}] Backups done (backuped ${foldersToBackup.length} folders)`);
+  sendNotification(`✅ [${process.env.NODE_NAME}] Backups done (backuped ${foldersToBackup.length} folders)`);
 };
 
 module.exports = {

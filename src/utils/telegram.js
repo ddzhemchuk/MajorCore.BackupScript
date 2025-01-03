@@ -1,7 +1,10 @@
 const sendNotification = async (msg) => {
+  let notify = false;
+
   if (msg instanceof Error) {
     console.error(msg);
-    msg = `❌ [${process.env.FTP_USER}] Backups error. Logs: ${msg.message}`;
+    notify = true;
+    msg = `❌ [${process.env.NODE_NAME}] Backups error. Logs: ${msg.message}`;
   }
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -13,7 +16,18 @@ const sendNotification = async (msg) => {
   }
 
   try {
-    await fetch(`https://api.telegram.org/${token}/sendMessage?chat_id=${chatId}&chat_type=private&text=${msg}&parse_mode=Markdown`);
+    await fetch(`https://api.telegram.org/${token}/sendMessage`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: msg,
+        parse_mode: "HTML",
+        disable_notification: !notify,
+      }),
+    });
   } catch (err) {
     console.error(err);
   }
