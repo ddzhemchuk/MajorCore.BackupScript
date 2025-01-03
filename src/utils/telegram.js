@@ -18,10 +18,6 @@ const sendNotification = async (msg) => {
   } catch (err) {
     console.error(err);
   }
-
-  if (msg instanceof Error) {
-    process.exit(1);
-  }
 };
 
 module.exports = {
