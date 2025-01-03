@@ -116,7 +116,7 @@ const backupFolders = async () => {
   const foldersToBackup = await getFolders();
 
   if (foldersToBackup.length === 0) {
-    sendNotification(`✅ [${process.env.NODE_NAME}] Backups done (no folders to backup)`);
+    if (process.env.ONLY_ON_ERROR !== "true") sendNotification(`✅ [${process.env.NODE_NAME}] Backups done (no folders to backup)`);
     return;
   }
 
@@ -125,7 +125,7 @@ const backupFolders = async () => {
   }
 
   const backupsList = await getBackupsListForNotification(foldersToBackup);
-  sendNotification(`✅ [${process.env.NODE_NAME}] Backups done:\n ${backupsList}`);
+  if (process.env.ONLY_ON_ERROR !== "true") sendNotification(`✅ [${process.env.NODE_NAME}] Backups done:\n ${backupsList}`);
 };
 
 module.exports = {
