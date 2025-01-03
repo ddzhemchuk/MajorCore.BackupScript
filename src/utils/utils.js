@@ -1,4 +1,5 @@
 const fs = require("fs").promises;
+const { exec } = require("child_process");
 const path = require("path");
 
 /** Generates a remote folder name for backups & creates a local TMP folder */
@@ -30,15 +31,36 @@ const getFolders = async () => {
   }
 
   const files = await fs.readdir(sourceDir, { withFileTypes: true });
-  const directories = files
-    .filter((dirent) => dirent.isDirectory() && !dirent.name.startsWith("."))
-    .map((dirent) => dirent.name);
+  const directories = files.filter((dirent) => dirent.isDirectory() && !dirent.name.startsWith(".")).map((dirent) => dirent.name);
 
   return directories;
 };
 
+const getBackupsListForNotification = async (folders) => {
+  const path = process.env.SOURCE_DIR;
+  let foldersPaths = "";
+
+  if (!Array.isArray(folders) || folders.length === 0) {
+    foldersPaths = `${path}/*`;
+  } else {
+    folders.forEach((folder) => {
+      foldersPaths += `${path}/${folder} `;
+    });
+  }
+
+  return new Promise((resolve) => {
+    exec(`du -sh ${foldersPaths}`, (error, stdout, stderr) => {
+      if (error) {
+        return resolve("....failed to get backups list....");
+      }
+
+      resolve(stdout.trim().replace(path, "")); // Return the raw output
+    });
+  });
+};
 
 module.exports = {
   getBackupFolderPath,
   getFolders,
+  getBackupsListForNotification,
 };

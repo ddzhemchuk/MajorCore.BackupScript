@@ -2,7 +2,7 @@ const { Client } = require("basic-ftp");
 const { exec } = require("child_process");
 const path = require("path");
 const fs = require("fs");
-const { getBackupFolderPath, getFolders } = require("./utils");
+const { getBackupFolderPath, getFolders, getBackupsListForNotification } = require("./utils");
 const { sendNotification } = require("./telegram");
 
 let backupFolderPath = null;
@@ -124,7 +124,8 @@ const backupFolders = async () => {
     await archiveAndUpload(folder);
   }
 
-  sendNotification(`✅ [${process.env.NODE_NAME}] Backups done (backuped ${foldersToBackup.length} folders)`);
+  const backupsList = await getBackupsListForNotification(foldersToBackup);
+  sendNotification(`✅ [${process.env.NODE_NAME}] Backups done:\n ${backupsList}`);
 };
 
 module.exports = {
