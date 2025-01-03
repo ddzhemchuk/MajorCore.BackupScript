@@ -54,7 +54,7 @@ const getBackupsListForNotification = async (folders) => {
         return resolve("....failed to get backups list....");
       }
 
-      resolve(stdout.trim().replace(path, "")); // Return the raw output
+      resolve(stdout.trim().replaceAll(path + "/", "")); // Return the raw output
     });
   });
 };
