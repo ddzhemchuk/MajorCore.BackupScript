@@ -64,8 +64,8 @@ const beforeEach = async () => {
 /** Uploads a tar archive to FTP server */
 const uploadArchive = async (folder) => {
   const client = await getClient();
-  const archive = path.join(process.cwd(), "tmp", `${folder}.tar.gz`);
-  const ftpPath = backupFolderPath + folder + ".tar.gz";
+  const archive = path.join(process.cwd(), "tmp", `${folder}.tar.zst`);
+  const ftpPath = backupFolderPath + folder + ".tar.zst";
 
   await client.uploadFrom(archive, ftpPath);
 
@@ -75,7 +75,7 @@ const uploadArchive = async (folder) => {
 /** Creates a tar archive of a folder */
 const createTar = async (output, sourceDir) => {
   return new Promise((resolve, reject) => {
-    const command = `tar --ignore-failed-read -czf ${output} -C ${sourceDir} .`;
+    const command = `tar -I zstd --ignore-failed-read -cf ${output} -C ${sourceDir} .`;
 
     const tarProcess = exec(command, (error, stdout, stderr) => {
       if (error) {
@@ -96,7 +96,7 @@ const createTar = async (output, sourceDir) => {
 /** Archives and uploads a folder */
 const archiveAndUpload = async (folder) => {
   const sourceDir = path.join(process.env.SOURCE_DIR, folder);
-  const output = path.join(process.cwd(), "tmp", `${folder}.tar.gz`);
+  const output = path.join(process.cwd(), "tmp", `${folder}.tar.zst`);
 
   try {
     await createTar(output, sourceDir);
