@@ -79,7 +79,7 @@ const createTar = async (output, sourceDir) => {
 
     const tarProcess = exec(command, (error, stdout, stderr) => {
       if (error) {
-        return reject(new Error(`Error: ${error.message}\n${stderr}`));
+        console.warn(`Error: ${error.message}\n${stderr}`);
       }
       if (stderr) {
         console.warn(`Warning: ${stderr.trim()}`);
