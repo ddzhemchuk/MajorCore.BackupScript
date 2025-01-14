@@ -71,9 +71,29 @@ const uploadArchive = async (folder) => {
 };
 
 /** Creates a tar archive of a folder */
-const createTar = async (output, sourceDir) => {
+const copyFile = async (output, sourceDir) => {
   return new Promise((resolve, reject) => {
-    const command = `tar -I zstd --ignore-failed-read --warning=no-file-changed -cf ${output} -C ${sourceDir} .`;
+    const command = `rsync -ah --progress --inplace ${sourceDir} ${output}`;
+
+    const tarProcess = exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.warn(`Error: ${error.message}\n${stderr}`);
+      }
+      if (stderr) {
+        console.warn(`Warning: ${stderr.trim()}`);
+      }
+      resolve(stdout.trim());
+    });
+
+    tarProcess.on("error", (error) => {
+      reject(new Error(`Failed to spawn tar process: ${error.message}`));
+    });
+  });
+};
+
+const compressFile = async (folder) => {
+  return new Promise((resolve, reject) => {
+    const command = `tar -I zstd -cf ${folder}.tar.zst ${folder}`;
 
     const tarProcess = exec(command, (error, stdout, stderr) => {
       if (error) {
@@ -94,20 +114,28 @@ const createTar = async (output, sourceDir) => {
 /** Archives and uploads a folder */
 const archiveAndUpload = async (folder) => {
   const sourceDir = path.join(process.env.SOURCE_DIR, folder);
-  const output = path.join(process.cwd(), "tmp", `${folder}.tar.zst`);
+  const output = path.join(process.cwd(), "tmp", folder);
 
   try {
-    await createTar(output, sourceDir);
-    console.log(`Archive created for folder: ${folder}`);
+    await copyFile(output, sourceDir);
+    console.log(`Archive created for file: ${folder}`);
   } catch (err) {
-    throw new Error(`Failed to create archive for folder: ${folder}. ${err.message}`);
+    throw new Error(`Failed to create archive for file: ${folder}. ${err.message}`);
+  }
+
+  try {
+    await compressFile(output);
+    fs.unlinkSync(output);
+    console.log(`Compressed archive for file: ${folder}`);
+  } catch (err) {
+    throw new Error(`Failed to compress archive for file: ${folder}. ${err.message}`);
   }
 
   try {
     await uploadArchive(folder);
-    console.log(`Uploaded archive for folder: ${folder}`);
+    console.log(`Uploaded archive for file: ${folder}`);
   } catch (err) {
-    throw new Error(`Failed to upload archive for folder: ${folder}. ${err.message}`);
+    throw new Error(`Failed to upload archive for file: ${folder}. ${err.message}`);
   }
 };
 
