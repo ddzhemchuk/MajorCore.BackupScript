@@ -69,7 +69,6 @@ const uploadArchive = async (folder) => {
   const ftpPath = backupFolderPath + folder + ".tar.zst";
 
   await client.uploadFrom(archive, ftpPath);
-  logger(`Uploaded archive ${folder} to remote ${ftpPath}`);
   client.close();
 
   fs.unlinkSync(archive);
@@ -138,7 +137,8 @@ const isEnoughSpace = async (source) => {
 const archiveAndUpload = async (folder) => {
   const sourceDir = path.join(process.env.SOURCE_DIR, folder);
   const output = path.join(process.cwd(), "tmp", folder);
-  logger(`Archiving folder: ${folder}`);
+  logger("");
+  logger(`===> Processing: ${folder} <===`);
   logger(`Source: ${sourceDir}`);
   logger(`Output: ${output}`);
 
@@ -170,6 +170,8 @@ const archiveAndUpload = async (folder) => {
 
   try {
     await uploadArchive(folder);
+    logger(`===> Uploaded archive ${folder} to remote ${ftpPath} <===`);
+    logger("");
   } catch (err) {
     throw new Error(`Failed to upload archive for file: ${folder}. ${err.message}`);
   }
