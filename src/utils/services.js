@@ -146,7 +146,7 @@ const archiveAndUpload = async (folder) => {
 
   try {
     if (!(await isEnoughSpace(sourceDir))) {
-      sendNotification(`☑️ [${process.env.NODE_NAME}] Not enough space to backup:\n ${folder}`);
+      sendNotification(`☑️ [${process.env.NODE_NAME}] Not enough space to backup: ${folder}`);
       logger(`Not enough space to backup: ${folder}`);
       return;
     }
