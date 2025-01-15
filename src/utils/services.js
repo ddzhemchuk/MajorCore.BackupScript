@@ -4,6 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const { getBackupFolderPath, getFolders, getBackupsListForNotification } = require("./utils");
 const { sendNotification } = require("./telegram");
+const disk = require("diskusage");
 
 let backupFolderPath = null;
 
@@ -111,10 +112,33 @@ const compressFile = async (folder) => {
   });
 };
 
+const isEnoughSpace = async (source) => {
+  const { free } = await disk.check("/");
+  const stats = fs.statSync(source);
+
+  //console.log free space, folder size in gb
+  console.log(`Free space: ${free / 1024 / 1024 / 1024} GB, Folder size: ${stats.size / 1024 / 1024 / 1024} GB`);
+
+  if (free < stats.size * 2) {
+    return false;
+  } else {
+    return true;
+  }
+};
+
 /** Archives and uploads a folder */
 const archiveAndUpload = async (folder) => {
   const sourceDir = path.join(process.env.SOURCE_DIR, folder);
   const output = path.join(process.cwd(), "tmp", folder);
+
+  try {
+    if (!isEnoughSpace(sourceDir)) {
+      if (process.env.ONLY_ON_ERROR !== "true") sendNotification(`☑️ [${process.env.NODE_NAME}] Not enough space to backup:\n ${folder}`);
+      console.log(`Not enough space to backup: ${folder}`);
+    }
+  } catch (err) {
+    throw new Error(`Failed to check space: ${err.message}`);
+  }
 
   try {
     await copyFile(output, sourceDir);
