@@ -1,4 +1,5 @@
 const fs = require("fs").promises;
+const fsSync = require("fs");
 const { exec } = require("child_process");
 const path = require("path");
 
@@ -61,10 +62,30 @@ const getBackupsListForNotification = async (folders) => {
   });
 };
 
+/** Empties the log file if it's more than 1GB */
+const emptyLogFile = () => {
+  const logFile = path.join(process.cwd(), "backup.log");
+  const stats = fsSync.statSync(logFile);
+  const fileSizeInBytes = stats.size;
+  const fileSizeInMegabytes = fileSizeInBytes / (1024 * 1024);
+
+  if (fileSizeInMegabytes > 1024) {
+    fsSync.writeFileSync(logFile, "");
+  }
+};
+
 const logger = (msg) => {
   if (process.env.LOGGING === "true") {
     console.log(msg);
   }
+
+  // writing to the log file
+  const path = path.join(process.cwd(), "backup.log");
+  fsSync.appendFile(path, `${new Date().toISOString()} - ${msg}\n`, (err) => {
+    if (err) {
+      console.error("Failed to write to log file");
+    }
+  });
 };
 
 module.exports = {
@@ -72,4 +93,5 @@ module.exports = {
   getFolders,
   getBackupsListForNotification,
   logger,
+  emptyLogFile
 };
