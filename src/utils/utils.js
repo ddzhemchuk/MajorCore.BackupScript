@@ -65,6 +65,12 @@ const getBackupsListForNotification = async (folders) => {
 /** Empties the log file if it's more than 1GB */
 const emptyLogFile = () => {
   const logFile = path.join(process.cwd(), "backup.log");
+  
+  //check file exists
+  if (!fsSync.existsSync(logFile)) {
+    return;
+  }
+
   const stats = fsSync.statSync(logFile);
   const fileSizeInBytes = stats.size;
   const fileSizeInMegabytes = fileSizeInBytes / (1024 * 1024);
