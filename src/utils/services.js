@@ -2,7 +2,7 @@ const { Client } = require("basic-ftp");
 const { exec } = require("child_process");
 const path = require("path");
 const fs = require("fs");
-const { getBackupFolderPath, getFolders, getBackupsListForNotification } = require("./utils");
+const { getBackupFolderPath, getFolders, getBackupsListForNotification, logger } = require("./utils");
 const { sendNotification } = require("./telegram");
 const disk = require("diskusage");
 
@@ -29,6 +29,7 @@ const getClient = async () => {
 
 /** Creates a backup folder on FTP server & deletes old backups */
 const beforeEach = async () => {
+  logger("Creating backup folder on FTP server & deleting old backups...");
   backupFolderPath = await getBackupFolderPath();
 
   let backups_limit = parseInt(process.env.BACKUPS_LIMIT);
@@ -46,6 +47,7 @@ const beforeEach = async () => {
 
       for (const folder of toDelete) {
         await client.removeDir(folder.name);
+        logger(`Deleted old backup: ${folder.name}`);
       }
     }
   } catch (err) {
@@ -54,6 +56,7 @@ const beforeEach = async () => {
 
   try {
     await client.ensureDir(backupFolderPath);
+    logger(`Created backup folder: ${backupFolderPath}`);
   } catch (err) {
     throw new Error(`Failed to create backup folder: ${err.message}`);
   }
@@ -66,15 +69,18 @@ const uploadArchive = async (folder) => {
   const ftpPath = backupFolderPath + folder + ".tar.zst";
 
   await client.uploadFrom(archive, ftpPath);
+  logger(`Uploaded archive ${folder} to remote ${ftpPath}`);
   client.close();
 
   fs.unlinkSync(archive);
+  logger(`Deleted: ${archive}`);
 };
 
 /** Creates a tar archive of a folder */
 const copyFile = async (output, sourceDir) => {
   return new Promise((resolve, reject) => {
     const command = `rsync -ah --progress --inplace ${sourceDir} ${output}`;
+    logger(`Executing command: ${command}`);
 
     const tarProcess = exec(command, (error, stdout, stderr) => {
       if (error) {
@@ -92,9 +98,11 @@ const copyFile = async (output, sourceDir) => {
   });
 };
 
+/** Compresses a file */
 const compressFile = async (folder) => {
   return new Promise((resolve, reject) => {
     const command = `tar -I zstd -cf ${folder}.tar.zst ${folder}`;
+    logger(`Executing command: ${command}`);
 
     const tarProcess = exec(command, (error, stdout, stderr) => {
       if (error) {
@@ -112,12 +120,12 @@ const compressFile = async (folder) => {
   });
 };
 
+/** Checks if there is enough space on the disk */
 const isEnoughSpace = async (source) => {
   const { free } = await disk.check("/");
   const stats = fs.statSync(source);
 
-  //console.log free space, folder size in gb
-  console.log(`Free space: ${free / 1024 / 1024 / 1024} GB, Folder size: ${stats.size / 1024 / 1024 / 1024} GB`);
+  logger(`Free space: ${(free / 1024 / 1024 / 1024).toFixed(2)} GB, Folder size: ${(stats.size / 1024 / 1024 / 1024).toFixed(2)} GB`);
 
   if (free < stats.size * 2) {
     return false;
@@ -130,11 +138,14 @@ const isEnoughSpace = async (source) => {
 const archiveAndUpload = async (folder) => {
   const sourceDir = path.join(process.env.SOURCE_DIR, folder);
   const output = path.join(process.cwd(), "tmp", folder);
+  logger(`Archiving folder: ${folder}`);
+  logger(`Source: ${sourceDir}`);
+  logger(`Output: ${output}`);
 
   try {
     if (!isEnoughSpace(sourceDir)) {
       if (process.env.ONLY_ON_ERROR !== "true") sendNotification(`☑️ [${process.env.NODE_NAME}] Not enough space to backup:\n ${folder}`);
-      console.log(`Not enough space to backup: ${folder}`);
+      logger(`Not enough space to backup: ${folder}`);
     }
   } catch (err) {
     throw new Error(`Failed to check space: ${err.message}`);
@@ -142,22 +153,23 @@ const archiveAndUpload = async (folder) => {
 
   try {
     await copyFile(output, sourceDir);
-    console.log(`Archive created for file: ${folder}`);
+    logger(`Copied ${sourceDir} to ${output}`);
   } catch (err) {
     throw new Error(`Failed to create archive for file: ${folder}. ${err.message}`);
   }
 
   try {
     await compressFile(output);
+    logger(`Compressed archive: ${output}`);
+
     fs.unlinkSync(output);
-    console.log(`Compressed archive for file: ${folder}`);
+    logger(`Deleted: ${output}`);
   } catch (err) {
     throw new Error(`Failed to compress archive for file: ${folder}. ${err.message}`);
   }
 
   try {
     await uploadArchive(folder);
-    console.log(`Uploaded archive for file: ${folder}`);
   } catch (err) {
     throw new Error(`Failed to upload archive for file: ${folder}. ${err.message}`);
   }
@@ -178,6 +190,7 @@ const backupFolders = async () => {
 
   const backupsList = await getBackupsListForNotification(foldersToBackup);
   if (process.env.ONLY_ON_ERROR !== "true") sendNotification(`✅ [${process.env.NODE_NAME}] Backups done:\n ${backupsList}`);
+  logger("Backups done");
 };
 
 module.exports = {

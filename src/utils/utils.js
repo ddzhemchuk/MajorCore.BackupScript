@@ -32,10 +32,12 @@ const getFolders = async () => {
 
   const files = await fs.readdir(sourceDir, { withFileTypes: true });
   const directories = files.filter((dirent) => !dirent.name.startsWith(".")).map((dirent) => dirent.name);
+  logger(`Folders to backup: ${directories.join(", ")}`);
 
   return directories;
 };
 
+/** Returns a list of backups (with sizes in GB) for notification */
 const getBackupsListForNotification = async (folders) => {
   const path = process.env.SOURCE_DIR;
   let foldersPaths = "";
@@ -59,8 +61,15 @@ const getBackupsListForNotification = async (folders) => {
   });
 };
 
+const logger = (msg) => {
+  if (process.env.LOGGING === "true") {
+    console.log(msg);
+  }
+};
+
 module.exports = {
   getBackupFolderPath,
   getFolders,
   getBackupsListForNotification,
+  logger,
 };
