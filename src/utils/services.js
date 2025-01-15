@@ -68,6 +68,7 @@ const uploadArchive = async (folder) => {
   const archive = path.join(process.cwd(), "tmp", `${folder}.tar.zst`);
   const ftpPath = backupFolderPath + folder + ".tar.zst";
 
+  logger(`Uploading archive: ${archive} to ${ftpPath}`);
   await client.uploadFrom(archive, ftpPath);
   client.close();
 
@@ -143,7 +144,7 @@ const archiveAndUpload = async (folder) => {
   logger(`Output: ${output}`);
 
   try {
-    if (!isEnoughSpace(sourceDir)) {
+    if (!(await isEnoughSpace(sourceDir))) {
       if (process.env.ONLY_ON_ERROR !== "true") sendNotification(`☑️ [${process.env.NODE_NAME}] Not enough space to backup:\n ${folder}`);
       logger(`Not enough space to backup: ${folder}`);
     }
