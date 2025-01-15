@@ -7,6 +7,8 @@ const sendNotification = async (msg) => {
     msg = `❌ [${process.env.NODE_NAME}] Backups error. Logs: ${msg.message}`;
   }
 
+  if (msg.includes("Not enough space")) notify = true;
+
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
