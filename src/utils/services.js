@@ -12,7 +12,7 @@ let backupFolderPath = null;
 const getClient = async () => {
   try {
     const client = new Client();
-    client.ftp.verbose = process.env.LOGGING === "true";
+    client.ftp.verbose = process.env.LOGGING_FTP === "true";
 
     await client.access({
       host: process.env.FTP_HOST,
