@@ -65,7 +65,7 @@ const getBackupsListForNotification = async (folders) => {
 /** Empties the log file if it's more than 1GB */
 const emptyLogFile = () => {
   const logFile = path.join(process.cwd(), "backup.log");
-  
+
   //check file exists
   if (!fsSync.existsSync(logFile)) {
     return;
@@ -86,8 +86,8 @@ const logger = (msg) => {
   }
 
   // writing to the log file
-  const path = path.join(process.cwd(), "backup.log");
-  fsSync.appendFile(path, `${new Date().toISOString()} - ${msg}\n`, (err) => {
+  const logFile = path.join(process.cwd(), "backup.log");
+  fsSync.appendFile(logFile, `${new Date().toISOString()} - ${msg}\n`, (err) => {
     if (err) {
       console.error("Failed to write to log file");
     }
