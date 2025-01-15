@@ -74,6 +74,7 @@ const uploadArchive = async (folder) => {
 
   fs.unlinkSync(archive);
   logger(`Deleted: ${archive}`);
+  logger(`===> Uploaded archive ${folder} to remote ${ftpPath} <===`);
 };
 
 /** Creates a tar archive of a folder */
@@ -171,7 +172,6 @@ const archiveAndUpload = async (folder) => {
 
   try {
     await uploadArchive(folder);
-    logger(`===> Uploaded archive ${folder} to remote ${ftpPath} <===`);
     logger("");
   } catch (err) {
     throw new Error(`Failed to upload archive for file: ${folder}. ${err.message}`);
