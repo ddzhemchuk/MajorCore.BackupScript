@@ -112,7 +112,7 @@ const archiveAndUpload = async (folder) => {
   }
 
   try {
-    console.log(`Uploading archive to FTP: ${ftpPath}`);
+    console.log(`Uploading archive to FTP: ${folder}`);
     await uploadArchive(folder);
     console.log(`Uploaded archive for folder: ${folder}`);
   } catch (err) {
