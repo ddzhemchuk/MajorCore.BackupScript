@@ -2,7 +2,11 @@ const { Client } = require("basic-ftp");
 const { exec } = require("child_process");
 const path = require("path");
 const fs = require("fs");
-const { getBackupFolderPath, getFolders, getBackupsListForNotification } = require("./utils");
+const {
+  getBackupFolderPath,
+  getFolders,
+  getBackupsListForNotification,
+} = require("./utils");
 const { sendNotification } = require("./telegram");
 
 let backupFolderPath = null;
@@ -31,7 +35,8 @@ const beforeEach = async () => {
   backupFolderPath = await getBackupFolderPath();
 
   let backups_limit = parseInt(process.env.BACKUPS_LIMIT);
-  backups_limit = isNaN(backups_limit) || backups_limit <= 0 ? 5 : backups_limit;
+  backups_limit =
+    isNaN(backups_limit) || backups_limit <= 0 ? 5 : backups_limit;
 
   //delete old backups
   const client = await getClient();
@@ -97,17 +102,23 @@ const archiveAndUpload = async (folder) => {
   const output = path.join(process.cwd(), "tmp", `${folder}.tar.zst`);
 
   try {
+    console.log(`Creating archive for folder: ${folder}`);
     await createTar(output, sourceDir);
     console.log(`Archive created for folder: ${folder}`);
   } catch (err) {
-    throw new Error(`Failed to create archive for folder: ${folder}. ${err.message}`);
+    throw new Error(
+      `Failed to create archive for folder: ${folder}. ${err.message}`
+    );
   }
 
   try {
+    console.log(`Uploading archive to FTP: ${ftpPath}`);
     await uploadArchive(folder);
     console.log(`Uploaded archive for folder: ${folder}`);
   } catch (err) {
-    throw new Error(`Failed to upload archive for folder: ${folder}. ${err.message}`);
+    throw new Error(
+      `Failed to upload archive for folder: ${folder}. ${err.message}`
+    );
   }
 };
 
@@ -116,16 +127,23 @@ const backupFolders = async () => {
   const foldersToBackup = await getFolders();
 
   if (foldersToBackup.length === 0) {
-    if (process.env.ONLY_ON_ERROR !== "true") sendNotification(`✅ [${process.env.NODE_NAME}] Backups done (no folders to backup)`);
+    if (process.env.ONLY_ON_ERROR !== "true")
+      sendNotification(
+        `✅ [${process.env.NODE_NAME}] Backups done (no folders to backup)`
+      );
     return;
   }
 
-  for (const folder of foldersToBackup) {
+  for await (const folder of foldersToBackup) {
     await archiveAndUpload(folder);
+    console.log("================================================");
   }
 
   const backupsList = await getBackupsListForNotification(foldersToBackup);
-  if (process.env.ONLY_ON_ERROR !== "true") sendNotification(`✅ [${process.env.NODE_NAME}] Backups done:\n ${backupsList}`);
+  if (process.env.ONLY_ON_ERROR !== "true")
+    sendNotification(
+      `✅ [${process.env.NODE_NAME}] Backups done:\n ${backupsList}`
+    );
 };
 
 module.exports = {
