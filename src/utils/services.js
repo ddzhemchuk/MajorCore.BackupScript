@@ -2,7 +2,12 @@ const { Client } = require("basic-ftp");
 const { exec } = require("child_process");
 const path = require("path");
 const fs = require("fs");
-const { getBackupFolderPath, getFolders, getBackupsListForNotification, logger } = require("./utils");
+const {
+  getBackupFolderPath,
+  getFolders,
+  getBackupsListForNotification,
+  logger,
+} = require("./utils");
 const { sendNotification } = require("./telegram");
 const disk = require("diskusage");
 
@@ -33,7 +38,8 @@ const beforeEach = async () => {
   backupFolderPath = await getBackupFolderPath();
 
   let backups_limit = parseInt(process.env.BACKUPS_LIMIT);
-  backups_limit = isNaN(backups_limit) || backups_limit <= 0 ? 5 : backups_limit;
+  backups_limit =
+    isNaN(backups_limit) || backups_limit <= 0 ? 5 : backups_limit;
 
   //delete old backups
   const client = await getClient();
@@ -100,9 +106,11 @@ const copyFile = async (output, sourceDir) => {
 };
 
 /** Compresses a file */
-const compressFile = async (folder) => {
+const compressFile = async (output, input) => {
   return new Promise((resolve, reject) => {
-    const command = `tar -I zstd -cf ${folder}.tar.zst ${folder}`;
+    const command = input
+      ? `tar -I zstd -cf ${output}.tar.zst ${input}`
+      : `tar -I zstd -cf ${output}.tar.zst ${output}`;
     logger(`Executing command: ${command}`);
 
     const tarProcess = exec(command, (error, stdout, stderr) => {
@@ -126,7 +134,14 @@ const isEnoughSpace = async (source) => {
   const { free } = await disk.check("/");
   const stats = fs.statSync(source);
 
-  logger(`Free space: ${(free / 1024 / 1024 / 1024).toFixed(2)} GB, Folder size: ${(stats.size / 1024 / 1024 / 1024).toFixed(2)} GB`);
+  logger(
+    `Free space: ${(free / 1024 / 1024 / 1024).toFixed(2)} GB, Folder size: ${(
+      stats.size /
+      1024 /
+      1024 /
+      1024
+    ).toFixed(2)} GB`
+  );
 
   if (free < stats.size * 2) {
     return false;
@@ -146,7 +161,9 @@ const archiveAndUpload = async (folder) => {
 
   try {
     if (!(await isEnoughSpace(sourceDir))) {
-      sendNotification(`☑️ [${process.env.NODE_NAME}] Not enough space to backup: ${folder}`);
+      sendNotification(
+        `☑️ [${process.env.NODE_NAME}] Not enough space to backup: ${folder}`
+      );
       logger(`Not enough space to backup: ${folder}`);
       return;
     }
@@ -155,27 +172,40 @@ const archiveAndUpload = async (folder) => {
   }
 
   try {
-    await copyFile(output, sourceDir);
-    logger(`Copied ${sourceDir} to ${output}`);
+    if (process.env.COPY_BEFORE_BACKUP === "true") {
+      await copyFile(output, sourceDir);
+      logger(`Copied ${sourceDir} to ${output}`);
+    }
   } catch (err) {
-    throw new Error(`Failed to create archive for file: ${folder}. ${err.message}`);
+    throw new Error(
+      `Failed to create archive for file: ${folder}. ${err.message}`
+    );
   }
 
   try {
-    await compressFile(output);
+    await compressFile(
+      output,
+      process.env.COPY_BEFORE_BACKUP === "true" ? null : sourceDir
+    );
     logger(`Compressed archive: ${output}`);
 
-    fs.unlinkSync(output);
-    logger(`Deleted: ${output}`);
+    if (process.env.COPY_BEFORE_BACKUP === "true") {
+      fs.unlinkSync(output);
+      logger(`Deleted: ${output}`);
+    }
   } catch (err) {
-    throw new Error(`Failed to compress archive for file: ${folder}. ${err.message}`);
+    throw new Error(
+      `Failed to compress archive for file: ${folder}. ${err.message}`
+    );
   }
 
   try {
     await uploadArchive(folder);
     logger("");
   } catch (err) {
-    throw new Error(`Failed to upload archive for file: ${folder}. ${err.message}`);
+    throw new Error(
+      `Failed to upload archive for file: ${folder}. ${err.message}`
+    );
   }
 };
 
@@ -184,16 +214,22 @@ const backupFolders = async () => {
   const foldersToBackup = await getFolders();
 
   if (foldersToBackup.length === 0) {
-    if (process.env.ONLY_ON_ERROR !== "true") sendNotification(`✅ [${process.env.NODE_NAME}] Backups done (no folders to backup)`);
+    if (process.env.ONLY_ON_ERROR !== "true")
+      sendNotification(
+        `✅ [${process.env.NODE_NAME}] Backups done (no folders to backup)`
+      );
     return;
   }
 
-  for (const folder of foldersToBackup) {
+  for await (const folder of foldersToBackup) {
     await archiveAndUpload(folder);
   }
 
   const backupsList = await getBackupsListForNotification(foldersToBackup);
-  if (process.env.ONLY_ON_ERROR !== "true") sendNotification(`✅ [${process.env.NODE_NAME}] Backups done:\n ${backupsList}`);
+  if (process.env.ONLY_ON_ERROR !== "true")
+    sendNotification(
+      `✅ [${process.env.NODE_NAME}] Backups done:\n ${backupsList}`
+    );
   logger("Backups done");
 };
 
