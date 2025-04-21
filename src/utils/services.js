@@ -133,7 +133,19 @@ const compressFile = async (output, input) => {
 /** Checks if there is enough space on the disk */
 const isEnoughSpace = async (source) => {
   const { free } = await disk.check("/");
-  const size = fastFolderSizeSync(source);
+  let size = 0;
+
+  try {
+    const stats = fs.statSync(source);
+
+    if (stats.isDirectory()) {
+      size = fastFolderSizeSync(source);
+    } else {
+      size = stats.size;
+    }
+  } catch (err) {
+    logger(`Failed to get size of ${source}: ${err.message}`);
+  }
 
   logger(
     `Free space: ${(free / 1024 / 1024 / 1024).toFixed(2)} GB, Folder size: ${(
@@ -144,7 +156,8 @@ const isEnoughSpace = async (source) => {
     ).toFixed(2)} GB`
   );
 
-  const requiredSpace = process.env.COPY_BEFORE_BACKUP === "true" ? size * 2 : size;
+  const requiredSpace =
+    process.env.COPY_BEFORE_BACKUP === "true" ? size * 2 : size;
 
   if (free < requiredSpace) {
     return false;
@@ -160,7 +173,11 @@ const archiveAndUpload = async (folder) => {
   logger("");
   logger(`===> Processing: ${folder} <===`);
   logger(`Source: ${sourceDir}`);
-  logger(`Output: ${output}`);
+  logger(
+    `Output: ${output}${
+      process.env.COPY_BEFORE_BACKUP !== "true" ? ".tar.zst" : ""
+    }`
+  );
 
   try {
     if (!(await isEnoughSpace(sourceDir))) {
@@ -190,7 +207,7 @@ const archiveAndUpload = async (folder) => {
       output,
       process.env.COPY_BEFORE_BACKUP === "true" ? null : sourceDir
     );
-    logger(`Compressed archive: ${output}`);
+    logger(`Compressed archive: ${output}.tar.zst`);
 
     if (process.env.COPY_BEFORE_BACKUP === "true") {
       fs.unlinkSync(output);
