@@ -144,7 +144,9 @@ const isEnoughSpace = async (source) => {
     ).toFixed(2)} GB`
   );
 
-  if (free < size * 2) {
+  const requiredSpace = process.env.COPY_BEFORE_BACKUP === "true" ? size * 2 : size;
+
+  if (free < requiredSpace) {
     return false;
   } else {
     return true;
