@@ -2,6 +2,7 @@ const { Client } = require("basic-ftp");
 const { exec } = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const getFolderSize = require("get-folder-size");
 const {
   getBackupFolderPath,
   getFolders,
@@ -132,18 +133,24 @@ const compressFile = async (output, input) => {
 /** Checks if there is enough space on the disk */
 const isEnoughSpace = async (source) => {
   const { free } = await disk.check("/");
-  const stats = fs.statSync(source);
+  let size = 0;
+
+  try {
+    size = await getFolderSize.loose(source);
+  } catch (err) {
+    logger(`Failed to get folder size: ${err.message}`);
+  }
 
   logger(
     `Free space: ${(free / 1024 / 1024 / 1024).toFixed(2)} GB, Folder size: ${(
-      stats.size /
+      size /
       1024 /
       1024 /
       1024
     ).toFixed(2)} GB`
   );
 
-  if (free < stats.size * 2) {
+  if (free < size * 2) {
     return false;
   } else {
     return true;

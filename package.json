@@ -12,7 +12,8 @@
   "dependencies": {
     "basic-ftp": "^5.0.5",
     "diskusage": "^1.2.0",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "get-folder-size": "^5.0.0"
   },
   "type": "commonjs"
 }
