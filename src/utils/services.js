@@ -9,7 +9,7 @@ const {
   logger,
 } = require("./utils");
 const { sendNotification } = require("./telegram");
-const disk = require("diskusage");
+const checkDiskSpace = require('check-disk-space').default
 const fastFolderSizeSync = require("fast-folder-size/sync");
 
 let backupFolderPath = null;
@@ -132,7 +132,7 @@ const compressFile = async (output, input) => {
 
 /** Checks if there is enough space on the disk */
 const isEnoughSpace = async (source) => {
-  const { free } = await disk.check("/");
+  const { free } = await checkDiskSpace('/');
   let size = 0;
 
   try {
