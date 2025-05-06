@@ -69,13 +69,17 @@ const beforeEach = async () => {
   }
 };
 
+async function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 /** Uploads a tar archive to FTP server */
-const uploadArchive = async (folder) => {
+const uploadArchive = async (folder, attempt) => {
   const client = await getClient();
   const archive = path.join(process.cwd(), "tmp", `${folder}.tar.zst`);
   const ftpPath = backupFolderPath + folder + ".tar.zst";
 
-  logger(`Uploading archive: ${archive} to ${ftpPath}`);
+  logger(`Uploading archive (attempt ${attempt}): ${archive} to ${ftpPath}`);
   await client.uploadFrom(archive, ftpPath);
   client.close();
 
@@ -83,6 +87,22 @@ const uploadArchive = async (folder) => {
   logger(`Deleted: ${archive}`);
   logger(`===> Uploaded archive ${folder} to remote ${ftpPath} <===`);
 };
+
+const tryUploadWithRetries = async (folder, maxRetries = 3, waitMs = 5 * 60 * 1000) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await uploadArchive(folder, attempt);
+      return;
+    } catch (err) {
+      if (attempt < maxRetries) {
+        console.log(`Waiting ${waitMs / 1000} seconds before retrying...`);
+        await delay(waitMs);
+      } else {
+        throw new Error(`Failed to upload archive after ${maxRetries} attempts: ${err.message}`);
+      }
+    }
+  }
+}
 
 /** Creates a tar archive of a folder */
 const copyFile = async (output, sourceDir) => {
@@ -220,7 +240,7 @@ const archiveAndUpload = async (folder) => {
   }
 
   try {
-    await uploadArchive(folder);
+    await tryUploadWithRetries(folder);
     logger("");
   } catch (err) {
     throw new Error(

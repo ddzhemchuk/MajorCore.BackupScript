@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "build": "pkg src/index.js --targets latest-linux-x64 --output dist/linux/backup"
   },
   "author": "",
   "license": "ISC",
@@ -15,5 +16,8 @@
     "dotenv": "^16.4.5",
     "fast-folder-size": "^2.4.0"
   },
-  "type": "commonjs"
+  "type": "commonjs",
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  }
 }
